@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Runtime.CompilerServices;
 using System.Text;
 using TodoLibrary.DataAccess;
@@ -10,13 +11,45 @@ public static class DependencyInjectionExtensions
 {
     public static void AddStandradServices(this WebApplicationBuilder builder)
     {
-        // Add services to the container.
-
         builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.AddSwaggerServices();
     }
+
+    private static void AddSwaggerServices(this WebApplicationBuilder builder)
+    {
+        var securityScheme = new OpenApiSecurityScheme()
+        {
+            Name = "Authorization",
+            Description = "JWT Authorization header info using bearer tokens",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        };
+
+        var securityRequirement = new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "bearerAuth"
+                     }
+                },
+                new string[] { }
+            }
+        };
+
+        builder.Services.AddSwaggerGen(opts => 
+        {
+            opts.AddSecurityDefinition("bearerAuth", securityScheme);
+            opts.AddSecurityRequirement(securityRequirement);
+        });
+    }   
+
     public static void AddCustomServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddSingleton<ISqlDataAccess, SqlDataAccess>();
